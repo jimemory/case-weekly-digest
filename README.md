@@ -118,3 +118,38 @@ uv run discover_weekly_cases.py --since 2026-03-01 --until 2026-03-31
 ## License
 
 MIT
+
+---
+
+## 🚀 最新进展 (Latest Updates)
+
+**2026-04-05 | v0.1.0 – 从 MVP 到两段式架构**
+
+本次迭代完成了从"被动数据view查询"到"主动 AI 归档"的关键跃迁。脚本不再只是打开文件时临时渲染，而是每周由 Claude Code 读取生成的报告后，把 AI 提炼后的关键进展、待办阻塞和引用来源**永久追加**到 case 文件末尾。这意味着 case 文件本身就是一本自动更新的项目日志，无需日复一日的手动整理。
+
+在 `Operation-PDX-IPS3 Gen12 Source Plan` 上完成了首份 Weekly Digest 验证，成功提取并归档了 2 篇日记中的项目进展与复盘。
+
+## 🛠️ 技术架构/逻辑变更
+
+早期尝试通过 Obsidian `dataviewjs` 在 case 文件中动态回链日记。但 dataview 只能在打开文件时渲染，既不沉淀内容，也无法做 AI 提炼。最终演进为"**纯 Python 发现 + 本地 Claude Code 生成**"的分层架构：
+
+```mermaid
+graph TD
+    A["日记层 (Date-level)"] -->|"wikilink [[Case Name]]"| B["discover_weekly_cases.py"]
+    B -->|"生成周报告"| C["report.md"]
+    C -->|"Claude Code 读取"| D["AI 提炼层"]
+    D -->|"生成 Weekly Digest"| E["Case 文件 (Case-level)"]
+    E -->|"heading anchor"| F["引用回跳日记"]
+```
+
+核心逻辑：
+1. **发现层（Python）**负责 I/O 密集的文件扫描、wikilink 提取和去重，零成本且不依赖外部 API。
+2. **生成层（Claude Code）**负责语义理解与结构化摘要，把原始碎片转化为可读的 case 进展。
+3. **归档层（Obsidian md）**用带 `#heading` 的 wikilink 实现 case → diary 的可追溯导航。
+
+## 📌 待办与后续 (Backlog)
+
+- [ ] **批量模式 (`--all`)**：一键为报告中所有 case 生成 Digest，无需逐个手动触发。
+- [ ] **增量去重**：记录已归档的日记/日期组合，避免同一周重复生成。
+- [ ] **Cron 自动化**：绑定 `CronCreate` 每周一 9:00 自动触发"发现 → 提炼 → 归档"完整链路。
+- [ ] **支持 Area 类 case**：目前与 Project 同等支持，后续可针对 `20 🥅 Area/` 做更轻量的归档模板。

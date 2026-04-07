@@ -48,7 +48,7 @@ def _build_case_index(vault: Path) -> dict[str, list[Path]]:
     return index
 
 
-def resolve_wikilink(link_text: str, index: dict[str, list[Path]]) -> Path | None:
+def resolve_wikilink(link_text: str, index: dict[str, list[Path]]) -> Optional[Path]:
     clean = link_text.strip()
     candidates: list[Path] = []
 
@@ -112,6 +112,7 @@ def main() -> None:
     parser.add_argument("--since", type=str, help="Start date YYYY-MM-DD")
     parser.add_argument("--until", type=str, help="End date YYYY-MM-DD")
     parser.add_argument("--vault", type=Path, default=DEFAULT_VAULT, help="Obsidian vault path")
+    parser.add_argument("--output-dir", type=Path, default=REPORT_DIR, help="Directory to write the report")
     args = parser.parse_args()
 
     today = datetime.now().date()
@@ -146,8 +147,9 @@ def main() -> None:
                 case_data[case_name][diary_date].extend(snippets)
 
     year, week, _ = since.isocalendar()
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    report_path = REPORT_DIR / f"{year}-W{week:02d}_report.md"
+    output_dir = args.output_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    report_path = output_dir / f"{year}-W{week:02d}_report.md"
 
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(f"# Weekly Case Snapshot {year}-W{week:02d}\n")
